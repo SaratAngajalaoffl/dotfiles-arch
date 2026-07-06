@@ -4,3 +4,9 @@
 [submodule "nvim"]
 	path = nvim
 	url = git@github.com:SaratAngajalaoffl/dotfiles-nvim.git
+[submodule "lazygit"]
+	path = lazygit
+	url = git@github.com:SaratAngajalaoffl/dotfiles-lazygit.git
+[submodule "bin"]
+	path = bin
+	url = git@github.com:SaratAngajalaoffl/dotfiles-bin.git

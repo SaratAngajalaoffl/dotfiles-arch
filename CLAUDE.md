@@ -38,10 +38,12 @@ Two guards run before each `ln -s`:
 
 Current submodules and their targets:
 
-| Submodule | Target           |
-| --------- | ---------------- |
-| `zsh`     | `~/.zshrc`       |
-| `nvim`    | `~/.config/nvim` |
+| Submodule  | Target                            |
+| ---------- | --------------------------------- |
+| `zsh`      | `~/.zshrc`                        |
+| `nvim`     | `~/.config/nvim`                  |
+| `lazygit`  | `~/.config/lazygit/config.yml`    |
+| `bin`      | `~/.local/bin/*` (per-file links) |
 
 ### Adding a new app
 
