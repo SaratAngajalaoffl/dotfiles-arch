@@ -1,0 +1,12 @@
+# Arch package manifest — one package per line under each section.
+# install.sh runs: sudo pacman -S --needed, then yay/paru -S --needed.
+
+pacman:
+zsh
+neovim
+git
+ripgrep
+fd
+lazygit
+
+aur:

@@ -1,0 +1,6 @@
+[submodule "zsh"]
+	path = zsh
+	url = git@github.com:SaratAngajalaoffl/dotfiles-zsh.git
+[submodule "nvim"]
+	path = nvim
+	url = git@github.com:SaratAngajalaoffl/dotfiles-nvim.git
