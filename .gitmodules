@@ -10,3 +10,6 @@
 [submodule "bin"]
 	path = bin
 	url = git@github.com:SaratAngajalaoffl/dotfiles-bin.git
+[submodule "kitty"]
+	path = kitty
+	url = git@github.com:SaratAngajalaoffl/dotfiles-kitty.git
