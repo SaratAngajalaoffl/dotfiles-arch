@@ -13,3 +13,9 @@
 [submodule "kitty"]
 	path = kitty
 	url = git@github.com:SaratAngajalaoffl/dotfiles-kitty.git
+[submodule "fastfetch"]
+	path = fastfetch
+	url = git@github.com:SaratAngajalaoffl/dotfiles-fastfetch.git
+[submodule "dunst"]
+	path = dunst
+	url = git@github.com:SaratAngajalaoffl/dotfiles-dunst.git
