@@ -43,6 +43,3 @@
 [submodule "applications"]
 	path = applications
 	url = git@github.com:SaratAngajalaoffl/dotfiles-applications.git
-[submodule "containers"]
-	path = containers
-	url = git@github.com:SaratAngajalaoffl/dotfiles-containers.git
