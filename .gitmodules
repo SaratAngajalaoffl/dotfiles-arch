@@ -25,3 +25,24 @@
 [submodule "waybar"]
 	path = waybar
 	url = git@github.com:SaratAngajalaoffl/dotfiles-waybar.git
+[submodule "scripts"]
+	path = scripts
+	url = git@github.com:SaratAngajalaoffl/dotfiles-scripts.git
+[submodule "hypr"]
+	path = hypr
+	url = git@github.com:SaratAngajalaoffl/dotfiles-hypr.git
+[submodule "systemd"]
+	path = systemd
+	url = git@github.com:SaratAngajalaoffl/dotfiles-systemd.git
+[submodule "qt5ct"]
+	path = qt5ct
+	url = git@github.com:SaratAngajalaoffl/dotfiles-qt5ct.git
+[submodule "qt6ct"]
+	path = qt6ct
+	url = git@github.com:SaratAngajalaoffl/dotfiles-qt6ct.git
+[submodule "applications"]
+	path = applications
+	url = git@github.com:SaratAngajalaoffl/dotfiles-applications.git
+[submodule "containers"]
+	path = containers
+	url = git@github.com:SaratAngajalaoffl/dotfiles-containers.git
