@@ -19,3 +19,9 @@
 [submodule "dunst"]
 	path = dunst
 	url = git@github.com:SaratAngajalaoffl/dotfiles-dunst.git
+[submodule "rofi"]
+	path = rofi
+	url = git@github.com:SaratAngajalaoffl/dotfiles-rofi.git
+[submodule "waybar"]
+	path = waybar
+	url = git@github.com:SaratAngajalaoffl/dotfiles-waybar.git
