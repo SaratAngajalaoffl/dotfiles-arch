@@ -43,3 +43,6 @@
 [submodule "applications"]
 	path = applications
 	url = git@github.com:SaratAngajalaoffl/dotfiles-applications.git
+[submodule "claude"]
+	path = claude
+	url = git@github.com:SaratAngajalaoffl/dotfiles-claude.git
