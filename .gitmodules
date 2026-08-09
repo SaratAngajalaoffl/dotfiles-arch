@@ -46,3 +46,6 @@
 [submodule "claude"]
 	path = claude
 	url = git@github.com:SaratAngajalaoffl/dotfiles-claude.git
+[submodule "atuin"]
+	path = atuin
+	url = git@github.com:SaratAngajalaoffl/dotfiles-atuin.git
