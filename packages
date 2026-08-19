@@ -20,5 +20,7 @@ hyprlock
 hyprsunset
 qt5ct
 qt6ct
+libsecret
+gnome-keyring
 
 aur:

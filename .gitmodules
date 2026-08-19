@@ -49,3 +49,6 @@
 [submodule "atuin"]
 	path = atuin
 	url = git@github.com:SaratAngajalaoffl/dotfiles-atuin.git
+[submodule "pi-agent"]
+	path = pi-agent
+	url = git@github.com:SaratAngajalaoffl/dotfiles-pi-agent.git
