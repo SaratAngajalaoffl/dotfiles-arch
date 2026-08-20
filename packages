@@ -22,5 +22,6 @@ qt5ct
 qt6ct
 libsecret
 gnome-keyring
+tmux
 
 aur:
