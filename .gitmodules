@@ -52,3 +52,6 @@
 [submodule "pi-agent"]
 	path = pi-agent
 	url = git@github.com:SaratAngajalaoffl/dotfiles-pi-agent.git
+[submodule "tmux"]
+	path = tmux
+	url = git@github.com:SaratAngajalaoffl/dotfiles-tmux.git
