@@ -50,7 +50,7 @@ Current submodules and their targets:
 
 ### Theming
 
-`theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-latte` and `catppuccin-macchiato` are example alt themes). Each theme directory contains:
+`theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-latte`, `catppuccin-macchiato`, and `tokyo-night` are example alt themes). Each theme directory contains:
 
 - `theme.conf` — `THEME_NAME`, `THEME_MODE` (dark/light), `QT_SCHEME` (which `qt5ct`/`qt6ct` color file to select)
 - `waybar-colors.css`, `kitty-theme.conf`, `rofi-colors.rasi`, `dunstrc`, `hyprland-colors.lua` — full themed files for each app
