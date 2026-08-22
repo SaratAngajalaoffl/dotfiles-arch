@@ -58,3 +58,6 @@
 [submodule "theme"]
 	path = theme
 	url = git@github.com:SaratAngajalaoffl/dotfiles-theme.git
+[submodule "eww"]
+	path = eww
+	url = git@github.com:SaratAngajalaoffl/dotfiles-eww.git
