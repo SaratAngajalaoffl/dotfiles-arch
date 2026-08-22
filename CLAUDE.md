@@ -50,7 +50,7 @@ Current submodules and their targets:
 
 ### Theming
 
-`theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-latte`, `catppuccin-macchiato`, and `tokyo-night` are example alt themes). Each theme directory contains:
+`theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-macchiato` is a hand-built extra). The rest (`catppuccin-latte`, `tokyo-night`, `nord`, `gruvbox`, `kanagawa`, `rose-pine`, `everforest`, and a dozen more) are ported from [basecamp/omarchy](https://github.com/basecamp/omarchy) (MIT licensed): each one's palette comes from omarchy's `themes/<name>/colors.toml`, mapped onto our 26-key Catppuccin-style slots (see `gen_theme.py` approach — omarchy's `red`/`bright_red`/`magenta`/etc. get matched to `rosewater`/`flamingo`/`pink`/... by hue, `background`/`dark_background`/`darker_background`/`lighter_background` become `base`/`mantle`/`crust`/`surface0-2`), and its wallpaper is one of omarchy's own bundled images, re-encoded to JPEG. Each theme directory contains:
 
 - `theme.conf` — `THEME_NAME`, `THEME_MODE` (dark/light), `QT_SCHEME` (which `qt5ct`/`qt6ct` color file to select)
 - `waybar-colors.css`, `kitty-theme.conf`, `rofi-colors.rasi`, `dunstrc`, `hyprland-colors.lua` — full themed files for each app
