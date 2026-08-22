@@ -23,6 +23,10 @@ qt6ct
 libsecret
 gnome-keyring
 tmux
+jq
+inotify-tools
+cliphist
+wl-clipboard
 
 aur:
 eww
