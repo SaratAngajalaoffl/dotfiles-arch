@@ -44,6 +44,31 @@ Current submodules and their targets:
 | `nvim`     | `~/.config/nvim`                  |
 | `lazygit`  | `~/.config/lazygit/config.yml`    |
 | `bin`      | `~/.local/bin/*` (per-file links) |
+| `theme`    | `~/.config/theme` + `~/.local/bin/*` (theme switcher, see Theming below) |
+
+(Not exhaustive — run `git submodule status` for the full list; most app submodules follow the `config:~/.config/<app>` pattern from the "Adding a new app" steps.)
+
+### Theming
+
+`theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-latte` and `catppuccin-macchiato` are example alt themes). Each theme directory contains:
+
+- `theme.conf` — `THEME_NAME`, `THEME_MODE` (dark/light), `QT_SCHEME` (which `qt5ct`/`qt6ct` color file to select)
+- `waybar-colors.css`, `kitty-theme.conf`, `rofi-colors.rasi`, `dunstrc`, `hyprland-colors.lua` — full themed files for each app
+- `backgrounds/` — one or more wallpapers, committed to the repo. With 2+ backgrounds, the first (alphabetically) is used 7 AM-7 PM and the second at night.
+
+The consuming submodules (`waybar`, `kitty`, `rofi`, `dunst`) gitignore their theme-owned file (`config/colors.css`, `config/current-theme.conf`, `config/colors.rasi`, `config/dunstrc`) — these are symlinks to the active theme, not tracked content. `hypr` gitignores `config/conf/hyprland/colors.lua` the same way; `look_and_feel.lua` requires it for border colors. `qt5ct`/`qt6ct` are untouched by symlinks — `theme-set.sh` just rewrites the `color_scheme_path` line in `qt5ct.conf`/`qt6ct.conf` to point at the theme's declared `QT_SCHEME` file (those per-accent files already live in `qt5ct/config/colors/` and `qt6ct/config/colors/`, committed normally).
+
+```bash
+# Switch theme (also reloads waybar/dunst, sets the wallpaper, reloads Hyprland)
+theme-set.sh <theme-name>
+
+# Rofi picker over available themes, bound to SUPER + CTRL + SPACE
+theme-menu.sh
+```
+
+`~/.config/theme/current` is a symlink to the active theme directory, repointed by `theme-set.sh`. `install.sh` bootstraps the default theme automatically on a fresh install if no theme has been set yet — it never overrides an already-chosen theme on a subsequent run.
+
+To add a new theme: copy an existing `theme/config/themes/<name>/` directory, edit `theme.conf` and the per-app files, drop wallpaper(s) into `backgrounds/`, and (if using a new Qt accent) add matching color files under `qt5ct/config/colors/` and `qt6ct/config/colors/`.
 
 ### Adding a new app
 

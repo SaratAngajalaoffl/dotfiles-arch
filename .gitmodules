@@ -55,3 +55,6 @@
 [submodule "tmux"]
 	path = tmux
 	url = git@github.com:SaratAngajalaoffl/dotfiles-tmux.git
+[submodule "theme"]
+	path = theme
+	url = git@github.com:SaratAngajalaoffl/dotfiles-theme.git

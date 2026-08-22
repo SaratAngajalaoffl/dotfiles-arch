@@ -75,6 +75,13 @@ while IFS= read -r submodule; do
     done < "$links_file"
 done < <(git -C "$DOTFILES_DIR" submodule foreach --quiet 'echo "$displaypath"')
 
+# Bootstrap the default theme on a fresh install (never overrides an already-chosen theme)
+DEFAULT_THEME="catppuccin-mocha"
+if [[ ! -e "$HOME/.config/theme/current" && -x "$HOME/.local/bin/theme-set.sh" ]]; then
+    echo "bootstrapping default theme: $DEFAULT_THEME"
+    "$HOME/.local/bin/theme-set.sh" "$DEFAULT_THEME" || echo "warning: theme bootstrap failed, run theme-set.sh manually later" >&2
+fi
+
 # Install packages from packages manifest
 install_packages() {
     local packages_file="$DOTFILES_DIR/packages"
