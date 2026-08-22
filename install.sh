@@ -11,6 +11,18 @@ fi
 
 git -C "$DOTFILES_DIR" submodule update --init --recursive
 
+# qt5ct/qt6ct: their .conf files are gitignored (theme-set.sh rewrites
+# color_scheme_path on every theme switch), so seed them from the
+# tracked template if they don't exist yet.
+for tool in qt5ct qt6ct; do
+    conf="$DOTFILES_DIR/$tool/config/$tool.conf"
+    tpl="$DOTFILES_DIR/$tool/config/$tool.conf.tpl"
+    if [[ ! -f "$conf" && -f "$tpl" ]]; then
+        cp "$tpl" "$conf"
+        echo "seeded: $conf ← $tpl"
+    fi
+done
+
 link_one() {
     local src_path="$1"
     local tgt="$2"
