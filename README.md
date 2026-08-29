@@ -53,4 +53,4 @@ See `CLAUDE.md` for the full steps: create a `dotfiles-<appname>` repo, add a `.
 - [0002](docs/adr/0002-from-scratch-neovim-config.md) — from-scratch Neovim over a starter distro
 - [0003](docs/adr/0003-ai-agent-popup-architecture.md) — AI agent popup architecture
 - [0004](docs/adr/0004-ai-commit-assistant-backend-selection.md) — AI commit assistant backend selection
-- [0005](docs/adr/0005-pi-agent-anera-only-provider.md) — pi-agent anera-only provider
+- [0005](docs/adr/0005-pi-agent-custom-provider-only.md) — pi-agent custom-provider-only
