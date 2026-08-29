@@ -1,5 +1,6 @@
 # Arch package manifest — one package per line under each section.
-# install.sh runs: sudo pacman -S --needed, then yay/paru -S --needed.
+# install.sh runs: sudo pacman -S --needed, then yay/paru -S --needed,
+# then rustup toolchain install, then npm install -g.
 
 pacman:
 zsh
@@ -27,7 +28,11 @@ jq
 inotify-tools
 cliphist
 wl-clipboard
+rustup
 
 aur:
-eww
+eww-git
 rofi-emoji
+
+rustup:
+stable

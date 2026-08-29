@@ -102,6 +102,8 @@ install_packages() {
     local section=""
     local -a pacman_pkgs=()
     local -a aur_pkgs=()
+    local -a rustup_toolchains=()
+    local -a npm_pkgs=()
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         line="${line%%#*}"
@@ -117,6 +119,8 @@ install_packages() {
         case "$section" in
             pacman) pacman_pkgs+=("$line") ;;
             aur)    aur_pkgs+=("$line") ;;
+            rustup) rustup_toolchains+=("$line") ;;
+            npm)    npm_pkgs+=("$line") ;;
         esac
     done < "$packages_file"
 
@@ -138,10 +142,67 @@ install_packages() {
         echo "installing AUR packages via $aur_helper: ${aur_pkgs[*]}"
         "$aur_helper" -S --needed --noconfirm "${aur_pkgs[@]}"
     fi
+
+    if [[ ${#rustup_toolchains[@]} -gt 0 ]]; then
+        command -v rustup &>/dev/null || { echo "error: rustup toolchains listed in packages but rustup is not installed (add 'rustup' under pacman:)." >&2; exit 1; }
+        echo "installing rustup toolchains: ${rustup_toolchains[*]}"
+        for toolchain in "${rustup_toolchains[@]}"; do
+            rustup toolchain install --no-self-update "$toolchain"
+        done
+    fi
+
+    if [[ ${#npm_pkgs[@]} -gt 0 ]]; then
+        command -v npm &>/dev/null || { echo "error: npm packages listed in packages but npm is not installed." >&2; exit 1; }
+        echo "installing npm global packages: ${npm_pkgs[*]}"
+        npm install -g "${npm_pkgs[@]}"
+    fi
 }
 
 echo "installing packages from packages..."
 install_packages
+
+# Check secrets declared in each submodule's .secrets manifest (format:
+# "label:secret-tool attribute pairs", one per line — same idea as .links).
+# Prompts via `secret-tool store` for anything missing; fails at the end if
+# any are still unset, so a fresh install can't silently run without them.
+check_secrets() {
+    command -v secret-tool &>/dev/null || return
+
+    local secrets_file label attrs reply
+    local -a attr_array missing=()
+
+    while IFS= read -r submodule; do
+        secrets_file="$DOTFILES_DIR/$submodule/.secrets"
+        [[ -f "$secrets_file" ]] || continue
+
+        while IFS=: read -r label attrs || [[ -n "$label" ]]; do
+            [[ -z "$label" || "${label:0:1}" == "#" ]] && continue
+            attrs="${attrs# }"
+            read -ra attr_array <<< "$attrs"
+
+            secret-tool lookup "${attr_array[@]}" &>/dev/null && continue
+
+            echo ""
+            echo "missing secret: $label"
+            read -r -p "  enter it now? [Y/n] " reply </dev/tty
+            if [[ -z "$reply" || "$reply" =~ ^[Yy] ]]; then
+                secret-tool store --label="$label" "${attr_array[@]}" </dev/tty
+            fi
+
+            secret-tool lookup "${attr_array[@]}" &>/dev/null || missing+=("$label ($submodule)")
+        done < "$secrets_file"
+    done < <(git -C "$DOTFILES_DIR" submodule foreach --quiet 'echo "$displaypath"')
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo ""
+        echo "error: missing required secrets:" >&2
+        printf '  %s\n' "${missing[@]}" >&2
+        exit 1
+    fi
+}
+
+echo "checking required secrets..."
+check_secrets
 
 # Print manual setup instructions from each submodule's .setup file
 setup_notes=()

@@ -48,6 +48,24 @@ Current submodules and their targets:
 
 (Not exhaustive — run `git submodule status` for the full list; most app submodules follow the `config:~/.config/<app>` pattern from the "Adding a new app" steps.)
 
+### Secrets
+
+Any app submodule that needs an API key or similar credential declares it in a `.secrets` file at the submodule root — a plain-text manifest of `label:attrs` pairs (one per line, same shape as `.links`), where `attrs` is the exact attribute list `secret-tool` needs, e.g.:
+
+```
+Spotify Soloist API key:service spotify-soloist key api-key
+```
+
+`install.sh` reads every submodule's `.secrets` after installing packages, checks each via `secret-tool lookup <attrs>`, and for anything missing, prompts `enter it now? [Y/n]` and runs `secret-tool store --label="<label>" <attrs>` (both reads pinned to `/dev/tty` so they don't collide with the `.secrets` file being parsed). If any secret is still unset after prompting, install.sh exits non-zero listing what's missing — a fresh install can't silently run without them.
+
+Secrets never live in this repo or any submodule as files — only the gnome-keyring entry does, keyed by whatever `service`/`key` (or similar) attributes the submodule's scripts look up at runtime. Because the manifest splits on the *first* colon per line (same as `.links`), a label must not itself contain a colon.
+
+Submodules using this: `systemd` (Spotify Soloist API key), `eww` (Spotify search Client ID/Secret), `pi-agent` (per-provider API keys).
+
+### Manual setup notes
+
+A submodule can also drop a `.setup` file at its root — free-form text for steps that can't be automated (pairing a device, running a one-time wizard). `install.sh` collects and prints every submodule's `.setup` under "manual setup required" at the end of a run. Don't duplicate secret-prompting instructions here — that's what `.secrets` is for; `.setup` is for what's left after secrets are handled.
+
 ### Theming
 
 `theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-macchiato` is a hand-built extra). The rest (`catppuccin-latte`, `tokyo-night`, `nord`, `gruvbox`, `kanagawa`, `rose-pine`, `everforest`, and a dozen more) are ported from [basecamp/omarchy](https://github.com/basecamp/omarchy) (MIT licensed): each one's palette comes from omarchy's `themes/<name>/colors.toml`, mapped onto our 26-key Catppuccin-style slots (see `gen_theme.py` approach — omarchy's `red`/`bright_red`/`magenta`/etc. get matched to `rosewater`/`flamingo`/`pink`/... by hue, `background`/`dark_background`/`darker_background`/`lighter_background` become `base`/`mantle`/`crust`/`surface0-2`), and its wallpaper is one of omarchy's own bundled images, re-encoded to JPEG. Each theme directory contains:
@@ -81,6 +99,7 @@ To add a new theme: copy an existing `theme/config/themes/<name>/` directory, ed
    ```
    config:~/.config/<appname>
    ```
+   If the app needs credentials, add a `.secrets` manifest too (see Secrets above); for anything else manual, add a `.setup` file.
 4. Set the remote, commit, and push:
    ```bash
    git remote add origin git@github.com:SaratAngajalaoffl/dotfiles-<appname>.git
@@ -118,8 +137,10 @@ Plugin updates: `:Lazy update` inside Neovim. Lock file is `lazy-lock.json`.
 
 ### packages
 
-`packages` at the repo root declares Arch packages in two sections (`pacman:` and `aur:`). `install.sh` runs `sudo pacman -S --needed --noconfirm` for official packages and `yay` or `paru -S --needed --noconfirm` for AUR packages (auto-detects whichever helper is installed).
+`packages` at the repo root declares system dependencies in up to four sections: `pacman:`, `aur:`, `rustup:`, and `npm:`. `install.sh` runs, in order: `sudo pacman -S --needed --noconfirm` for official packages, `yay`/`paru -S --needed --noconfirm` for AUR packages (auto-detects whichever helper is installed), `rustup toolchain install --no-self-update <name>` for each `rustup:` entry, and `npm install -g <name>` for each `npm:` entry.
 
-To add a package: add its name under the relevant section and commit.
+`rustup:` entries are toolchain names (e.g. `stable`), not components or targets — this exists for tools (like `eww`) whose upstream recommends building against a rustup-managed toolchain rather than the distro's `rust` package. `rustup` itself must be declared under `pacman:` (it's an official Arch package); `install.sh` errors out if `rustup:` entries are present but the `rustup` binary isn't found. Likewise `npm:` entries require `npm` already on `PATH` (this repo doesn't manage a Node install — the machine's own npm/nvm setup provides it); `install.sh` errors out if `npm:` entries are present but `npm` isn't found.
+
+To add a package/toolchain/global: add its name under the relevant section and commit. Only add a `rustup:`/`npm:` section when something actually needs it — don't add empty sections speculatively.
 
 `pacman` must be available before running `install.sh` — the script will exit with a clear error if it isn't found.
