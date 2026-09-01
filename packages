@@ -36,3 +36,6 @@ rofi-emoji
 
 rustup:
 stable
+
+npm:
+@playwright/cli
