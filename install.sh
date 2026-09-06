@@ -161,6 +161,12 @@ install_packages() {
 echo "installing packages from packages..."
 install_packages
 
+# k3s: installed via upstream's own script rather than a pacman/AUR package.
+if ! command -v k3s &>/dev/null; then
+    echo "installing k3s..."
+    curl -sfL https://get.k3s.io | sh -
+fi
+
 # Check secrets declared in each submodule's .secrets manifest (format:
 # "label:secret-tool attribute pairs", one per line — same idea as .links).
 # Prompts via `secret-tool store` for anything missing; fails at the end if
