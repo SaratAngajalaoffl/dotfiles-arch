@@ -29,6 +29,8 @@ inotify-tools
 cliphist
 wl-clipboard
 rustup
+kubectl
+helm
 
 aur:
 eww-git
