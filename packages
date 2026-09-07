@@ -1,43 +1,112 @@
 # Arch package manifest — one package per line under each section.
 # install.sh runs: sudo pacman -S --needed, then yay/paru -S --needed,
 # then rustup toolchain install, then npm install -g.
+#
+# Everything here is required by a config in this repo. Personal apps that no
+# submodule references (browsers aside, media, games, etc.) deliberately stay out.
+# Prerequisites install.sh cannot bootstrap itself: pacman, and an AUR helper
+# (yay/paru) for the aur: section.
 
 pacman:
-zsh
-neovim
+# --- base toolchain ---
 git
+base-devel
+curl
+gawk
+python
+rustup
+
+# --- shell ---
+zsh
+zoxide
+lsd
+tmux
+nvm
+
+# --- editors / terminal ---
+neovim
+kitty
+
+# --- cli utilities used by scripts ---
 ripgrep
 fd
-lazygit
+jq
 yq
-kitty
+lazygit
 fastfetch
-dunst
-rofi
-waybar
+inotify-tools
+psmisc
+pacman-contrib
+
+# --- hyprland desktop ---
 hyprland
 hyprpaper
 hyprlock
 hyprsunset
-qt5ct
-qt6ct
-libsecret
-gnome-keyring
-tmux
-jq
-inotify-tools
+hyprpicker
+hyprpolkitagent
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+waybar
+dunst
+rofi
+rofi-emoji
+grim
+slurp
 cliphist
 wl-clipboard
-rustup
+brightnessctl
+libnotify
+network-manager-applet
+openrgb
+
+# --- audio / bluetooth ---
+wireplumber
+libpulse
+playerctl
+bluez
+bluez-utils
+
+# --- fonts (waybar, kitty, rofi, dunst and eww all set FiraCode Nerd Font) ---
+ttf-firacode-nerd
+
+# --- qt theming (QT_QPA_PLATFORMTHEME=qt6ct is set in hypr/env.lua) ---
+qt5ct
+qt6ct
+qt5-wayland
+qt6-wayland
+
+# --- secrets (libsecret backs every .secrets lookup) ---
+libsecret
+gnome-keyring
+
+# --- gui apps referenced by hypr keybinds / desktop entries ---
+thunar
+thunar-volman
+imv
+flatpak
+
+# --- containers / kubernetes ---
+docker
+docker-compose
 kubectl
 helm
 
+# --- homelab backup scripts (scripts/backup) ---
+tar
+gnupg
+aws-cli
+
 aur:
 eww-git
-rofi-emoji
+google-chrome
+brave-bin
+cursor-bin
+cliamp-bin
 
 rustup:
 stable
 
 npm:
 @playwright/cli
+@earendil-works/pi-coding-agent
