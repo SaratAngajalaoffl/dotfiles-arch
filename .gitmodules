@@ -16,15 +16,6 @@
 [submodule "fastfetch"]
 	path = fastfetch
 	url = git@github.com:SaratAngajalaoffl/dotfiles-fastfetch.git
-[submodule "dunst"]
-	path = dunst
-	url = git@github.com:SaratAngajalaoffl/dotfiles-dunst.git
-[submodule "rofi"]
-	path = rofi
-	url = git@github.com:SaratAngajalaoffl/dotfiles-rofi.git
-[submodule "waybar"]
-	path = waybar
-	url = git@github.com:SaratAngajalaoffl/dotfiles-waybar.git
 [submodule "scripts"]
 	path = scripts
 	url = git@github.com:SaratAngajalaoffl/dotfiles-scripts.git
@@ -40,9 +31,6 @@
 [submodule "qt6ct"]
 	path = qt6ct
 	url = git@github.com:SaratAngajalaoffl/dotfiles-qt6ct.git
-[submodule "applications"]
-	path = applications
-	url = git@github.com:SaratAngajalaoffl/dotfiles-applications.git
 [submodule "claude"]
 	path = claude
 	url = git@github.com:SaratAngajalaoffl/dotfiles-claude.git
