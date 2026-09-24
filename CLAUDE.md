@@ -8,7 +8,7 @@ This is the **parent repo** (`dotfiles-arch`) for a multi-repo dotfiles system. 
 
 The parent repo owns `install.sh`, `packages`, and the submodule declarations — it never hard-codes config paths. All symlink mappings live in each app repo's `.links` manifest.
 
-The legacy flat repo (`arch-dotfiles-v2` at `~/dotfiles`) still manages unmigrated configs (hypr, waybar, containers, etc.) until each is moved into an app repo.
+The legacy flat repo (`arch-dotfiles-v2`) still manages unmigrated configs (containers, etc.) until each is moved into an app repo.
 
 ## Key commands
 
@@ -45,6 +45,7 @@ Current submodules and their targets:
 | `lazygit`  | `~/.config/lazygit/config.yml`    |
 | `bin`      | `~/.local/bin/*` (per-file links) |
 | `theme`    | `~/.config/theme` + `~/.local/bin/*` (theme switcher, see Theming below) |
+| `quickshell` | `~/.config/quickshell` (the desktop shell: bar, frame, notifications, launcher, emoji, wallpaper, dashboard) |
 
 (Not exhaustive — run `git submodule status` for the full list; most app submodules follow the `config:~/.config/<app>` pattern from the "Adding a new app" steps.)
 
@@ -60,7 +61,7 @@ Spotify Soloist API key:service spotify-soloist key api-key
 
 Secrets never live in this repo or any submodule as files — only the gnome-keyring entry does, keyed by whatever `service`/`key` (or similar) attributes the submodule's scripts look up at runtime. Because the manifest splits on the *first* colon per line (same as `.links`), a label must not itself contain a colon.
 
-Submodules using this: `systemd` (Spotify Soloist API key), `eww` (Spotify search Client ID/Secret), `pi-agent` (per-provider API keys).
+Submodules using this: `systemd` (Spotify Soloist API key), `quickshell` (Spotify search Client ID/Secret), `pi-agent` (per-provider API keys).
 
 ### Manual setup notes
 
@@ -70,18 +71,24 @@ A submodule can also drop a `.setup` file at its root — free-form text for ste
 
 `theme/config/themes/<name>/` holds one directory per theme (`catppuccin-mocha` is the default — matches what was previously hardcoded per-app; `catppuccin-macchiato` is a hand-built extra). The rest (`catppuccin-latte`, `tokyo-night`, `nord`, `gruvbox`, `kanagawa`, `rose-pine`, `everforest`, and a dozen more) are ported from [basecamp/omarchy](https://github.com/basecamp/omarchy) (MIT licensed): each one's palette comes from omarchy's `themes/<name>/colors.toml`, mapped onto our 26-key Catppuccin-style slots (see `gen_theme.py` approach — omarchy's `red`/`bright_red`/`magenta`/etc. get matched to `rosewater`/`flamingo`/`pink`/... by hue, `background`/`dark_background`/`darker_background`/`lighter_background` become `base`/`mantle`/`crust`/`surface0-2`), and its wallpaper is one of omarchy's own bundled images, re-encoded to JPEG. Each theme directory contains:
 
-- `theme.conf` — `THEME_NAME`, `THEME_MODE` (dark/light), `QT_SCHEME` (which `qt5ct`/`qt6ct` color file to select)
-- `waybar-colors.css`, `kitty-theme.conf`, `rofi-colors.rasi`, `dunstrc`, `hyprland-colors.lua`, `nvim-colors.lua` — full themed files for each app
+- `palette.json` — **source of truth**: 26 Catppuccin-named colours
+- `theme.conf` — `THEME_NAME`, `THEME_MODE` (dark/light), `QT_SCHEME` (which `qt5ct`/`qt6ct` color file to select), border accent/inactive
+- `kitty-theme.conf`, `hyprland-colors.lua`, `nvim-colors.lua`, `quickshell-colors.json` — **generated** themed files for each app
 - `backgrounds/` — one or more wallpapers, committed to the repo. With 2+ backgrounds, the first (alphabetically) is used 7 AM-7 PM and the second at night.
 
-The consuming submodules (`waybar`, `kitty`, `rofi`, `dunst`) gitignore their theme-owned file (`config/colors.css`, `config/current-theme.conf`, `config/colors.rasi`, `config/dunstrc`) — these are symlinks to the active theme, not tracked content. `hypr` gitignores `config/conf/hyprland/colors.lua` the same way; `look_and_feel.lua` requires it for border colors. `nvim` gitignores `config/lua/config/theme-colors.lua` the same way; the `catppuccin/nvim` colorscheme plugin (`nvim/config/lua/plugins/colorscheme.lua`) requires it — falling back to a hardcoded default flavour if the file is absent — and returns `{ mode, palette }` (the palette uses catppuccin's own key names, which is what each theme's `waybar-colors.css` already provides) applied via `color_overrides`; picking up a new theme requires reopening nvim. `qt5ct`/`qt6ct` are untouched by symlinks — `theme-set.sh` just rewrites the `color_scheme_path` line in `qt5ct.conf`/`qt6ct.conf` to point at the theme's declared `QT_SCHEME` file (those per-accent files already live in `qt5ct/config/colors/` and `qt6ct/config/colors/`, committed normally).
+`theme/bin/theme-gen.py` renders the generated files from `palette.json` + `templates/*.tpl`; `--check` verifies the committed tree still matches. Don't hand-edit generated files — edit the palette or the template. `overrides/palette.json` is merged onto the palette, and an `overrides/<file>` is used verbatim, for themes that need to deviate.
+
+The consuming submodules gitignore their theme-owned file (`kitty`: `config/current-theme.conf`) — these are symlinks to the active theme, not tracked content. `hypr` gitignores `config/conf/hyprland/colors.lua` the same way; `look_and_feel.lua` requires it for border colors. `nvim` gitignores `config/lua/config/theme-colors.lua` the same way; the `catppuccin/nvim` colorscheme plugin (`nvim/config/lua/plugins/colorscheme.lua`) requires it — falling back to a hardcoded default flavour if the file is absent — and returns `{ mode, palette }` (the palette uses catppuccin's own key names, which is what each theme's `palette.json` already provides) applied via `color_overrides`; picking up a new theme requires reopening nvim. `quickshell` reads `~/.config/theme/current/quickshell-colors.json` directly and is refreshed with `qs ipc call theme reload`. `qt5ct`/`qt6ct` are untouched by symlinks — `theme-set.sh` just rewrites the `color_scheme_path` line in `qt5ct.conf`/`qt6ct.conf` to point at the theme's declared `QT_SCHEME` file (those per-accent files already live in `qt5ct/config/colors/` and `qt6ct/config/colors/`, committed normally).
 
 ```bash
-# Switch theme (also reloads waybar/dunst, sets the wallpaper, reloads Hyprland)
+# Switch theme (sets the wallpaper, reloads the shell and Hyprland)
 theme-set.sh <theme-name>
 
-# Rofi picker over available themes, bound to SUPER + CTRL + SPACE
-theme-menu.sh
+# Pick a theme from the shell, bound to SUPER + CTRL + SPACE
+# (the Quickshell theme popup — it drives the same theme-set.sh)
+
+# Verify generated files match the committed tree
+python3 theme/bin/theme-gen.py --check
 ```
 
 `~/.config/theme/current` is a symlink to the active theme directory, repointed by `theme-set.sh`. `install.sh` bootstraps the default theme automatically on a fresh install if no theme has been set yet — it never overrides an already-chosen theme on a subsequent run.
@@ -139,7 +146,7 @@ Plugin updates: `:Lazy update` inside Neovim. Lock file is `lazy-lock.json`.
 
 `packages` at the repo root declares system dependencies in up to four sections: `pacman:`, `aur:`, `rustup:`, and `npm:`. `install.sh` runs, in order: `sudo pacman -S --needed --noconfirm` for official packages, `yay`/`paru -S --needed --noconfirm` for AUR packages (auto-detects whichever helper is installed), `rustup toolchain install --no-self-update <name>` for each `rustup:` entry, and `npm install -g <name>` for each `npm:` entry.
 
-`rustup:` entries are toolchain names (e.g. `stable`), not components or targets — this exists for tools (like `eww`) whose upstream recommends building against a rustup-managed toolchain rather than the distro's `rust` package. `rustup` itself must be declared under `pacman:` (it's an official Arch package); `install.sh` errors out if `rustup:` entries are present but the `rustup` binary isn't found. Likewise `npm:` entries require `npm` already on `PATH` (this repo doesn't manage a Node install — the machine's own npm/nvm setup provides it); `install.sh` errors out if `npm:` entries are present but `npm` isn't found.
+`rustup:` entries are toolchain names (e.g. `stable`), not components or targets — this exists for tools whose upstream recommends building against a rustup-managed toolchain rather than the distro's `rust` package. `rustup` itself must be declared under `pacman:` (it's an official Arch package); `install.sh` errors out if `rustup:` entries are present but the `rustup` binary isn't found. Likewise `npm:` entries require `npm` already on `PATH` (this repo doesn't manage a Node install — the machine's own npm/nvm setup provides it); `install.sh` errors out if `npm:` entries are present but `npm` isn't found.
 
 To add a package/toolchain/global: add its name under the relevant section and commit. Only add a `rustup:`/`npm:` section when something actually needs it — don't add empty sections speculatively.
 

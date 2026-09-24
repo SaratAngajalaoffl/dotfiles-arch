@@ -11,7 +11,7 @@ Personal Arch Linux dotfiles, split into one git repo per application and wired 
 | `<appname>/` | One submodule per app, each a standalone `dotfiles-<appname>` repo   |
 | `docs/adr/`  | Architecture decision records                                        |
 
-Current submodules: `applications`, `atuin`, `bin`, `claude`, `dunst`, `eww`, `fastfetch`, `hypr`, `kitty`, `lazygit`, `nvim`, `pi-agent`, `qt5ct`, `qt6ct`, `rofi`, `scripts`, `systemd`, `theme`, `tmux`, `waybar`, `zsh` — run `git submodule status` for exact commits.
+Current submodules: `applications`, `atuin`, `bin`, `claude`, `fastfetch`, `hypr`, `kitty`, `lazygit`, `nvim`, `pi-agent`, `quickshell`, `qt5ct`, `qt6ct`, `scripts`, `systemd`, `theme`, `tmux`, `zsh` — run `git submodule status` for exact commits.
 
 ## Bootstrap
 
@@ -32,11 +32,11 @@ cd dotfiles-arch
 
 ## Theming
 
-`theme/` is the central theme system consumed by `waybar`, `kitty`, `rofi`, `dunst`, `hypr`, `nvim`, and Qt apps — one directory per theme (Catppuccin flavors, plus a set ported from [omarchy](https://github.com/basecamp/omarchy)).
+`theme/` is the central theme system consumed by `quickshell`, `kitty`, `hypr`, `nvim`, and Qt apps — one directory per theme (Catppuccin flavors, plus a set ported from [omarchy](https://github.com/basecamp/omarchy)). Each theme owns a `palette.json` (26 Catppuccin-named colours), which the generator renders into the per-app files.
 
 ```bash
 theme-set.sh <theme-name>   # switch theme, reload the affected apps
-theme-menu.sh                # rofi picker, bound to SUPER+CTRL+SPACE
+# or pick from the shell: SUPER+CTRL+SPACE
 ```
 
 ## Secrets

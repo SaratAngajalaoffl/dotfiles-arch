@@ -927,26 +927,93 @@ not from stills.
 
 ---
 
-## Chunk 6 — Cutover
+## Chunk 6 — Cutover — DONE
 
-Only after every chunk above is verified.
+Removed `waybar`, `rofi`, `dunst`, `eww` and `hyprpaper`. What landed, and the
+two things that turned out to be load-bearing:
 
-1. Remove from `hypr/conf/hyprland/autostart.lua`: `waybar`, `eww daemon`,
-   `hyprpaper`, `hyprsunset` (hyprsunset stays if you still use it — it's
-   unrelated).
-2. Repoint keybinds: `toggleRofiScript` → `qs ipc call launcher toggle`,
-   `themeMenuScript` → `qs ipc call theme menu`.
-3. `packages`: drop `waybar`, `dunst`, `rofi`, `hyprpaper`; drop `eww-git` from
-   `aur:`.
-4. Delete submodules: `waybar`, `dunst`, `rofi`, `eww` (and their GitHub repos
-   — ask before deleting repos).
-5. Delete scripts: `toggle_rofi.sh`, `reload_dunst.sh`, `reload_waybar.sh`,
-   `reload_eww.sh`; rewrite `reload_all_services.sh` → `qs ipc call reload all`.
-6. Update `CLAUDE.md` + `CONTEXT.md` (submodule table, theming section,
-   "adding a new app" example).
+1. **`autostart.lua`** — dropped `waybar`, `eww daemon`, `hyprpaper`; kept
+   `hyprsunset` (unrelated to the shell). Added `awww-daemon` as a *detached*
+   autostart command rather than a child of `qs`: a child dies with the shell,
+   and the daemon has to outlive shell reloads or the wallpaper blinks out on
+   every config reload.
+2. **Keybinds** — `SUPER+SPACE` → `qs ipc call popups toggle launcher`,
+   `SUPER+CTRL+SPACE` → `qs ipc call popups toggle theme`. (The plan had these
+   as `qs ipc call launcher toggle` / `qs ipc call theme menu`; the shell's real
+   IPC surface is the `popups` handler, so the names changed.)
+3. **`packages`** — dropped `waybar`, `dunst`, `rofi`, `rofi-emoji`,
+   `hyprpaper` and `eww-git`.
+4. **Scripts** — deleted `toggle_rofi.sh`, `reload_dunst.sh`,
+   `reload_waybar.sh`, `reload_eww.sh` and `theme-menu.sh`; rewrote
+   `reload_all_services.sh` (now `qs ipc call reload all` + re-apply wallpaper)
+   and `reload_wallpaper.sh` (no more hyprpaper restart). Added a `reload` IPC
+   handler to the shell, which the old plan assumed existed.
+5. **Submodules** — `waybar`, `dunst`, `rofi`, `eww` are de-registered here;
+   see "Manual steps" below for the `git submodule deinit` commands.
+6. **Docs** — `README.md`, `CLAUDE.md`, `theme/README.md` updated to the new
+   app list, the `palette.json` theming model, and the new keybind.
 
-**Rollback:** until step 4 the old configs are untouched on disk and
-re-enabling them is one line in `autostart.lua`.
+### Blocker found: `rofi-emoji` owned the emoji data
+
+`EmojiService` read `/usr/share/rofi-emoji/all_emojis.txt`, which the
+`rofi-emoji` package owns — and that package **depends on `rofi`**. Removing
+rofi would therefore have silently emptied the new emoji picker. The data is now
+vendored at `quickshell/config/data/emoji.tsv` (5 042 rows, reduced to the four
+fields the service uses and de-duplicated), so the shell has no dependency on
+the software it replaced. See `quickshell/config/data/README.md`.
+
+### Blocker found: `waybar-colors.css` was the palette source of truth
+
+`theme-gen.py`'s `load_palette()` used `palette.json` *if present, else*
+parsed `waybar-colors.css` — and **no theme had `palette.json`**, so the CSS was
+the real source for all 23 themes. Deleting it with waybar broke generation
+outright. Each theme now has a committed `palette.json` (26 keys, converted
+1:1 from its `waybar-colors.css`); `load_palette()` reads that and nothing else.
+Potentially the most accidental deletion in this chunk — the "migration path"
+was the only path.
+
+`theme-gen.py --check` still passes **92/92 byte-for-byte** (23 themes × 4
+surviving outputs, down from 184/184: `waybar-colors.css`, `rofi-colors.rasi`,
+`dunstrc` and `eww-colors.scss` are no longer generated).
+
+### Also removed as collateral
+
+- `hypr/config/hyprpaper.conf` — orphaned once hyprpaper was gone (nothing
+  sourced it).
+- rofi vars in `hypr/config/conf/variables.conf` (`$menu`,
+  `$toggleRofiScript`, `$themeMenuScript`) — that file is now read only by
+  hyprlock, which uses none of them. `variables.conf` and `variables.lua` have
+  drifted apart; only the Lua one drives Hyprland.
+
+**Rollback:** the three submodules are clean and fully pushed, and their GitHub
+repos still exist, so re-adding one is `git submodule add`. The old configs are
+recoverable from those repos.
+
+### Manual steps (need root / git index / network — not run here)
+
+```bash
+# 1. Uninstall the packages (rofi-emoji must go with rofi; ripgrep etc. stay)
+sudo pacman -Rns waybar dunst rofi rofi-emoji hyprpaper
+
+# 2. Drop the AUR one
+yay -Rns eww-git
+
+# 3. De-register the four submodules (their GitHub repos are left alone)
+cd ~/dotfiles
+git submodule deinit -f waybar dunst rofi eww
+git rm -f waybar dunst rofi eww
+# edit .gitmodules to drop the four blocks, then:
+git add .gitmodules
+```
+
+The `~/.config/{waybar,dunst,rofi,eww}` symlinks were already removed, so nothing
+dangles once the directories go.
+
+**Order matters:** `install.sh` derives its symlink list from
+`git submodule foreach`, so until step 3 runs, a stray `./install.sh` would
+happily recreate those four `~/.config` symlinks (their `.links` manifests are
+still in the submodule repos). Do the removal before the next install. After
+that the app repos still exist on GitHub if anything needs recovering.
 
 ---
 

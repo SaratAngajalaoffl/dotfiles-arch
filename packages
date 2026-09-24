@@ -43,17 +43,12 @@ hyprland
 quickshell
 awww
 matugen
-hyprpaper
 hyprlock
 hyprsunset
 hyprpicker
 hyprpolkitagent
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
-waybar
-dunst
-rofi
-rofi-emoji
 grim
 slurp
 cliphist
@@ -70,7 +65,7 @@ playerctl
 bluez
 bluez-utils
 
-# --- fonts (waybar, kitty, rofi, dunst and eww all set FiraCode Nerd Font) ---
+# --- fonts (the shell and kitty set FiraCode Nerd Font) ---
 ttf-firacode-nerd
 
 # --- qt theming (QT_QPA_PLATFORMTHEME=qt6ct is set in hypr/env.lua) ---
@@ -101,7 +96,6 @@ gnupg
 aws-cli
 
 aur:
-eww-git
 google-chrome
 brave-bin
 cursor-bin
