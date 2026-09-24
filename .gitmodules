@@ -31,15 +31,9 @@
 [submodule "qt6ct"]
 	path = qt6ct
 	url = git@github.com:SaratAngajalaoffl/dotfiles-qt6ct.git
-[submodule "claude"]
-	path = claude
-	url = git@github.com:SaratAngajalaoffl/dotfiles-claude.git
 [submodule "atuin"]
 	path = atuin
 	url = git@github.com:SaratAngajalaoffl/dotfiles-atuin.git
-[submodule "pi-agent"]
-	path = pi-agent
-	url = git@github.com:SaratAngajalaoffl/dotfiles-pi-agent.git
 [submodule "tmux"]
 	path = tmux
 	url = git@github.com:SaratAngajalaoffl/dotfiles-tmux.git

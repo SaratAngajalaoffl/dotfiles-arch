@@ -11,7 +11,7 @@ Personal Arch Linux dotfiles, split into one git repo per application and wired 
 | `<appname>/` | One submodule per app, each a standalone `dotfiles-<appname>` repo   |
 | `docs/adr/`  | Architecture decision records                                        |
 
-Current submodules: `atuin`, `bin`, `claude`, `fastfetch`, `hypr`, `kitty`, `lazygit`, `nvim`, `pi-agent`, `quickshell`, `qt5ct`, `qt6ct`, `scripts`, `systemd`, `theme`, `tmux`, `zsh` — run `git submodule status` for exact commits.
+Current submodules: `atuin`, `bin`, `fastfetch`, `hypr`, `kitty`, `lazygit`, `nvim`, `quickshell`, `qt5ct`, `qt6ct`, `scripts`, `systemd`, `theme`, `tmux`, `zsh` — run `git submodule status` for exact commits.
 
 ## Bootstrap
 

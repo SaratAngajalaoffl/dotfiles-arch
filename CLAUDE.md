@@ -61,7 +61,7 @@ Spotify Soloist API key:service spotify-soloist key api-key
 
 Secrets never live in this repo or any submodule as files — only the gnome-keyring entry does, keyed by whatever `service`/`key` (or similar) attributes the submodule's scripts look up at runtime. Because the manifest splits on the *first* colon per line (same as `.links`), a label must not itself contain a colon.
 
-Submodules using this: `systemd` (Spotify Soloist API key), `quickshell` (Spotify search Client ID/Secret), `pi-agent` (per-provider API keys).
+Submodules using this: `systemd` (Spotify Soloist API key), `quickshell` (Spotify search Client ID/Secret).
 
 ### Manual setup notes
 
