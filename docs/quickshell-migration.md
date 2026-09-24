@@ -463,6 +463,88 @@ destructive one (deletes 7 files × 23 themes) and must only run **after** the
 byte-for-byte check passes, in its own commit, so `git revert` restores the
 rendered files.
 
+### Chunk 2 result (steps 1–2 + 5–6 + the shell bridge)
+
+**Status: done.** `bin/theme-gen.py` generates every per-app file from each
+theme's palette, and reproduces the committed tree **184/184 byte-for-byte**.
+Idempotent (running it twice is a no-op).
+
+What landed:
+
+- `bin/theme-gen.py` — the generator, with `--check` / `--templates` / `--theme`.
+- `templates/` — 8 templates (`waybar-colors.css`, `rofi-colors.rasi`,
+  `eww-colors.scss`, `kitty-theme.conf`, `hyprland-colors.lua`,
+  `nvim-colors.lua`, `dunstrc`, `quickshell-colors.json`).
+- `theme.conf` — extended with `BORDER_ACCENT`, `BORDER_INACTIVE`,
+  `ACTIVE_ALPHA`, `INACTIVE_ALPHA`, `GENERATOR`, and `*_HEX` variants.
+- `themes/*/quickshell-colors.json` — new, 23 files, consumed by the shell.
+- `themes/*/overrides/` — `rofi-colors.rasi` + `dunstrc` frozen verbatim.
+- `bin/theme-set.sh` — nudges the shell over IPC after a switch.
+- Shell: `services/Ipc.qml` (`qs ipc call theme reload`, `popups closeAll`),
+  `Colors.reloadTheme()`, `ColorLoader.forceReload()`.
+
+**Verified live:** `theme-set.sh catppuccin-mocha` repainted the bar from
+matte-black `#121212` to mocha `#1e1e2e` with no restart, and workspace pills
+followed (`#cdd6f4` active). Sampled the actual pixels, not just eyeballed.
+
+#### Parameters the palette alone does not cover
+
+These were discovered by diffing, not guessed. All are now data in `theme.conf`:
+
+| Parameter | Rule | Exceptions |
+| --- | --- | --- |
+| `BORDER_ACCENT` | palette key; Catppuccin→`red`, most ports→`blue` | kanagawa `text`, lumon `mauve`, retro-82 `peach` |
+| `BORDER_INACTIVE` | `overlay1` for 20/23 | lumon `flamingo`, retro-82 `pink`, solitude literal |
+| `ACTIVE_ALPHA` | `aa` (catppuccin) / `cc` (omarchy) | hackerman+solitude `ee` |
+| `INACTIVE_ALPHA` | `aa` | solitude `ff` |
+| `GENERATOR` | `catppuccin` or `omarchy` — drives header style | — |
+
+#### Three real bugs found while proving fidelity
+
+1. **`inactive_border` is NOT constant.** The first template hardcoded
+   `7f849c`. It varies across all 23 themes; templating it as a constant would
+   have silently broken every theme's inactive border. Same class of mistake
+   for the border alphas (`aa`/`cc`/`ee`).
+2. **`catppuccin-mocha/dunstrc` was stale.** Its `frame_color` `#cd0373` and
+   `highlight` `#2274d5` appear in no palette — the default theme's dunst never
+   matched its own colours. Because of this, deriving the dunst template from
+   mocha baked those literals in as constants; the template is derived from
+   `gruvbox` instead (clean, fully palette-derived).
+3. **`rofi-colors.rasi` had a hardcoded `// @import "catppuccin-mocha"`** in
+   all 23 themes — a copy-paste artifact from the generator that produced them.
+
+#### Why `dunstrc` and `rofi-colors.rasi` are frozen rather than templated
+
+Both files are **deleted in Chunk 6** (dunst and rofi go away). Getting them to
+100% would mean modelling dunst's urgency-block variance (~8 params) for files
+with a short remaining life. They are therefore frozen verbatim in
+`overrides/`, which:
+
+- keeps this commit **byte-for-byte** (nothing that consumes them changes), and
+- **proves the `overrides/` mechanism works** — it is now exercised by 46 real
+  files, not just a test.
+
+The files that actually survive the migration
+(`kitty-theme.conf`, `nvim-colors.lua`, `hyprland-colors.lua`) are **69/69
+byte-identical** from templates alone, with no overrides.
+
+#### Shell-side finding: symlink swaps do not fire file watchers
+
+`theme-set.sh` **replaces** the `~/.config/theme/current` symlink rather than
+editing the palette in place. `FileView { watchChanges: true }` watches the
+resolved inode, so repointing the symlink emits **no change event** — the shell
+would never recolour on a theme switch. Fixed with an `IpcHandler`
+(`qs ipc call theme reload`) that forces a re-read, which is why the reload
+line in `theme-set.sh` is load-bearing rather than decorative.
+
+#### Not yet done (step 3)
+
+The rendered files are still committed alongside the generator. Collapsing each
+theme dir down to `palette.json` + `theme.conf` + `backgrounds/` +
+`overrides/` is a **separate commit**, and is now safe because the generator is
+proven to reproduce them exactly. `--check` is the guard to run before and
+after that commit.
+
 ---
 
 ## Chunk 3 — Bar content parity
@@ -481,6 +563,75 @@ rendered files.
    `current_playback.sh`/`should_show_playback.sh` scripts — delete those.
 
 **Exit criteria:** visually + functionally ≥ waybar. Side-by-side screenshot.
+
+### Chunk 3 result
+
+**Status: done.** Bar has real content; verified live and compared against
+waybar running side by side (both bars were on screen at once).
+
+Services added (`config/services/`): `AudioService` (Pipewire),
+`BatteryService` (UPower), `MediaService` (MPRIS), `TrayService`
+(SystemTray), `NetworkService` (nmcli), `BluetoothService` (bluetoothctl),
+`BrightnessService` (brightnessctl). New bar modules: `SysTray`, `Media`.
+`RightContent` now reads from services instead of placeholders.
+
+Verified against the underlying tools, not just looked at:
+
+| Readout | Bar | Ground truth |
+| --- | --- | --- |
+| Volume | `55%` | `wpctl` 0.55 |
+| Network | `ethernet`, ssid `YDSG`, 89% | `nmcli` eno1 connected, YDSG |
+| Bluetooth | powered, 3 devices | `bluetoothctl devices` |
+| Sinks | ALC897, Creative Pebble Pro | `wpctl status` (2 real sinks) |
+| Networks list | 11 parsed, sorted by strength | `nmcli` 21 rows incl. hidden |
+| Brightness | hidden | no `/sys/class/backlight` |
+| Battery | hidden | desktop, no laptop battery |
+
+#### Four bugs found by checking values against ground truth
+
+Every one of these rendered plausibly and would have shipped silently:
+
+1. **Audio read a permanent `0%` while the sink was at `0.55`.**
+   `Pipewire.defaultAudioSink` returns a node whose `audio` bindings are **not
+   populated until the object is tracked** — probing it gave
+   `ready=false`, `volumes=` empty. Fix: a `PwObjectTracker` around the sink and
+   source, then read `sink.audio.volume`. This is the whole reason the
+   `PwObjectTracker` type exists, and it is not obvious from the property names.
+
+2. **Network reported `kind=none` on a machine with ethernet plugged in.**
+   `nmcli -t -f TYPE,STATE,CONNECTION,IN-USE dev status` — `IN-USE` is **not a
+   valid field for `dev status`** (only `DEVICE,TYPE,STATE,CONNECTION` are), so
+   the command failed outright and everything parsed as empty. Also matched
+   `state == "connected"` exactly, because `"connected (externally)"` is a
+   different string carried by docker/bridge/tun interfaces.
+
+3. **`brightnessctl -m | head -1` grabbed `input15::scrolllock`** (`leds, 0%`)
+   on a desktop with **no backlight at all** — so the module showed a fake
+   `0%` brightness. Fix: `brightnessctl -c backlight`, which exits non-zero
+   here, so the module correctly hides.
+
+4. **SSID parsed as `WPA2:YDSG`.** The wifi list columns are
+   `IN-USE:SIGNAL:SECURITY:SSID`, so the name is index **3**, not 2 — parsing
+   from index 2 folded the security field into the SSID.
+
+#### One QML trap worth remembering
+
+`readonly property var sinks: helperFunction()` **never re-evaluates** — a
+property initialised from a plain function is evaluated once and then frozen.
+The sink list kept showing a Chrome stream node that had long since exited.
+Fix: expose a `function sinkList()` for live reads, and keep the property
+binding only where QML needs a binding, re-touching `Pipewire.nodes.values`
+inside it so it actually invalidates. And filter `!isStream` — a browser
+playback stream is a Pipewire node with `isSink=true`.
+
+#### Deliberate scope limits
+
+- Brightness/battery `BarTrigger`s exist but have no popup (they are keys/wheel
+  targets); the power UI lands with the dashboard.
+- `NetworkService.networks` is populated on demand, so a popup must call
+  `scanNetworks()` and read on the *next* frame — a synchronous read in the same
+  IPC call legitimately returns nothing (this cost time to diagnose; it was a
+  test artifact, not a bug).
 
 ---
 
@@ -521,6 +672,100 @@ rendered files.
 **Exit criteria:** `notify-send a b` → toast slides in, stays; bell badge
 increments; restart the shell → notification still in the panel; mark-as-read
 clears the badge but keeps the card in history.
+
+### Chunk 4 result
+
+**Status: done** for the notification stack and eight of the popups. The large
+panels (Dashboard, Wallpaper, Spotify) move to Chunk 5 with the widgets they
+contain.
+
+Delivered popups, all `PopupWindow` (F3: small + anchored → near-opaque fill,
+no blur): `NotificationsPopup`, `NotificationToast`, `AudioPopup`,
+`NetworkPopup`, `BluetoothPopup`, `ClipboardPopup`, `EmojiPopup`,
+`AppLauncherPopup`, `UserMenuPopup`. `PopupLayer` instantiates each one against
+the bar window and anchors it at `x = barRight - width - borderWidth`,
+`y = notchHeight`.
+
+#### Persistent notifications (goal #2) — works
+
+Persistence is **record-driven, not force-expire**. `expireTimeout` is
+**read-only** on an incoming `Notification`: assigning to it throws
+`TypeError: Cannot assign to read-only property "expireTimeout"` and, because
+that happened inside `ingest()`, *silently aborted every arrival*. Persistence
+instead comes from our own on-disk store, written when a notification arrives;
+a record leaves `active` only on explicit delete. If the sending daemon later
+reports the notification closed, the record moves to `history`.
+
+Verified: `notify-send` → badge increments, card appears with app name and
+body, `✓`/`✕` work, and the store round-trips a shell restart with the cards
+intact.
+
+`~/.local/state/quickshell/notifications.json` holds
+`active`/`history`/`unread`.
+
+#### Bug: server ids restart at 1, colliding with restored cards
+
+Quickshell's notification server restarts its numeric id counter at **1** on
+every launch, so the first notification after a restart reused an id already
+held by a restored entry. The old dedupe therefore swallowed it — new
+notifications vanished after any restart, which looked exactly like a toast bug.
+
+Fix: separate **identity** from **server id**. Entries are keyed by a synthetic
+`id = "n" + (++_uid) + "-" + Date.now()` and carry the server id separately as
+`nid`. Dedupe only consults live handles (`_live[nid]`), and `_restore()` scrubs
+`nid` from restored entries and seeds `_uid` past the restored maximum so a
+stale id can never alias a new arrival.
+
+#### Bug: popups appeared on every monitor at once
+
+`PopupLayer` is instantiated once per monitor (one per `Scope` in the
+`Variants`), so every popup rendered on **both** displays simultaneously. Fixed
+with `HyprlandService.isFocused(screen)`; each popup's `open` is now
+`root.active && ShellState.<name>Open`. `PopupDismiss` gets the same guard —
+otherwise the invisible dismiss overlay also covered the unfocused monitor and
+swallowed its clicks while a popup was open.
+
+#### Bug: clipboard always empty
+
+`ClipboardService`'s list `Process` had **no `stdout` reader**, so cliphist's
+output was discarded and `_buf` stayed empty — the popup always showed
+"Clipboard history is empty" regardless of the real history. Fixed with a
+`SplitParser`. Now lists text, detects `[[ binary data … ]]` rows as images,
+and `decode | wl-copy` round-trips verified with `wl-paste`.
+
+#### Bug: `PopupPanel` overlap + no background
+
+`PopupPanel` originally parented every child at `body.data`, so a header and a
+list overlapped, and its height resolved to 0 — the panel painted no background
+at all. Rewritten as a `Column` (header slot + body), which cannot overlap, and
+the default fill is `Theme.popupBgSolid` precisely because a `PopupWindow`
+subsurface is not blurred. Large panels opt into the translucent
+`Theme.popupBg`.
+
+#### Animation (goal #5) — verified from QML, not from screenshots
+
+`grim` cannot resolve a 320 ms slide: capture latency exceeds the animation, so
+every frame shows the settled state. The slide was therefore asserted from QML
+— logging `y` during the transition gave the eased sequence
+`-43 → -35 → -29 → -24 → -18 → -15 → 0` (`OutCubic`), which is the real proof.
+(Note for future chunks: don't try to prove animation with stills.)
+
+#### Small-popup sweep
+
+All eight render, no QML errors, and each holds the expected live data:
+
+| Popup | Shows |
+| --- | --- |
+| Audio | real sinks + per-sink sliders (`wpctl` truth) |
+| Network | `ethernet` primary, `YDSG · 88%` (was bleeding wifi into the ethernet row) |
+| Bluetooth | `AirPods Pro`, `SRS-XB23`, `WH-1000XM5`, all Paired |
+| Clipboard | text + image rows, copy and delete |
+| Emoji | ~5000 entries from `rofi-emoji`, colour glyphs, categories |
+| Launcher | 71 apps, icon + comment, search |
+| UserMenu | Lock / Log out / Suspend / Reboot / Shut down, DND toggle |
+| Notifications | cards, `✓` `✕`, badges, history section |
+
+Deps added: `cliphist`, `rofi-emoji` (data file reused by `EmojiService`).
 
 ---
 
@@ -588,6 +833,100 @@ Chunk 0), so either add it to `packages` or make paste-only the default.
 
 ---
 
+### Chunk 5 result
+
+**Status: done.** All five items delivered, plus the two large panel popups
+(5a/5b) that Chunk 4 intentionally deferred.
+
+New services: `WallpaperService`, `PomodoroService`, `CalendarService`,
+`SettingsService`, `SpotifyService`. New popups: `WallpaperPopup`, `Dashboard`
+(Home + Customise tabs), `SpotifyPopup`. New components: `Toggle`,
+`SettingRow`.
+
+#### 5a. Wallpaper manager (goal #3)
+
+Grid over `~/Pictures/Wallpapers` + the active theme's `backgrounds/`, with a
+live `gif` badge for animated files. Transition chips (`grow`/`fade`/`wipe`/
+`outer`/`random`), a duration slider, and an apply-target row listing the real
+monitors from `Hyprland.monitors.values` plus "All".
+
+Verified end to end: `awww img` with the chosen transition/duration, selection
+persisted to `~/.local/state/quickshell/wallpaper.json`, restored on restart.
+`select_wallpaper.sh` and `~/.cache/appearance/wallpaper.png` are deliberately
+left alone — theme switching still owns the theme wallpaper; this service only
+overrides what is on screen now.
+
+`~/Pictures/Wallpapers` is created on demand; its absence is not an error.
+
+#### 5b. Calendar + Pomodoro
+
+Calendar: Monday-first month grid with an ISO week-number gutter, padding to
+whole weeks, today highlighted, prev/today/next. The week-number arithmetic is
+in `CalendarService` rather than the delegate.
+
+Pomodoro: work/short/long, long-break interval, auto-start, notify-on-finish.
+Remaining time is persisted, but **a running timer is not resumed** after a
+shell restart — it comes back paused, so the shell never ticks without being
+asked. Completion raises a notification through `NotificationService.notify()`,
+so it lands in the persistent panel.
+
+The centre notch shows a pomodoro ring **only while a session is running**, and
+it was verified progressing (ring arc grew as `remaining` fell 1500 → 1468).
+
+#### 5c. Customise tab (goal #4)
+
+Five sections — Blur, Opacity, Layout, Terminal, Shell — each row writing
+through `SettingsService`, which persists to
+`~/.local/state/quickshell/settings.json` and re-applies on startup.
+
+Hyprland-backed rows go through `HyprlandService` (`hyprctl eval`, because this
+machine runs a Lua config — finding F2). kitty-backed rows
+(`cursor_trail`, `background_opacity`, `font_size`) rewrite
+`kitty/user-settings.conf`, which `kitty.conf` now includes and `kitty/.gitignore`
+ignores — same trick as `current-theme.conf`, so runtime knobs never dirty the
+repo. kitty is signalled with `SIGUSR1`; verified that the process **survives**
+(reloads config, same PID).
+
+#### Bug: `applyHyprland()` silently applied only the last of ten writes
+
+`HyprlandService` used one `Process` whose `command` was reassigned per call,
+then restarted. `applyHyprland()` issues ten writes back to back, so the first
+nine were overwritten before they ever ran and only the final one took effect —
+the UI looked like a partial, random failure rather than an error. Fixed with a
+real queue (`_queue` + `_busy`, draining from `onExited`). Verified: setting
+blurSize/passes/rounding/gapsIn in one burst now lands all four.
+
+#### Bug: `Theme.surface` never existed
+
+Nine call sites (slider tracks, chips, thumbnail backgrounds, canvas strokes)
+bound `Theme.surface`, but `Theme` only exposed `surface0/1/2`. Every one
+silently evaluated to `undefined`, producing `Unable to assign [undefined] to
+QColor` warnings and unpainted fills; the nested-ternary `color` bindings hid
+it further because a falsy middle branch was easy to miss on screen. Fixed by
+defining `Theme.surface` (= `surface0`) once.
+
+#### 5e. Spotify popup
+
+Ported from the eww widget. Playback goes through `soloist ctl` (no Web API
+token, no MPRIS); search uses the Client Credentials flow with the Client
+ID/Secret from gnome-keyring (service `spotify-search`) — the credentials never
+touch QML, they are read inside `scripts/spotify-search.sh`.
+
+`.secrets` moves from `eww` to `quickshell`; both entries verified present in the
+keyring. Verified live against the real API: search returned 8 tracks for
+`daft punk`, album art and title/artist rendered from `soloist ctl now --json`,
+and playlist entries resolve.
+
+No new packages were needed — `soloist` and the keyring entries already exist.
+
+#### Animation note (repeated from Chunk 4)
+
+Still-unresolvable by screenshots: `grim` capture latency exceeds the 320 ms
+slide, so widget-open animation is asserted from QML (the eased `y` sequence),
+not from stills.
+
+---
+
 ## Chunk 6 — Cutover
 
 Only after every chunk above is verified.
@@ -629,7 +968,9 @@ Chunk 6, or now if you want it out of the way.
    entirely.** The emoji picker moves into the top-right dropdown as a
    Quickshell popup. So `rofi`, `rofi-emoji`, `dotfiles-rofi`, `config.rasi`,
    `fonts.rasi`, `colors.rasi` and `toggle_rofi.sh` all go in Chunk 6.
-4. Calendar: display-only, or real CalDAV/Google events?
+4. ~~Calendar: display-only, or real CalDAV/Google events?~~ **Answered: display-only**
+   for now. The month grid is real; the events area says so explicitly. Real
+   events need `khal`/CalDAV or Google Calendar and are a separate chunk.
 5. ~~Are the pending `hypr` submodule edits meant to be committed?~~ **Done.**
 6. **matugen needs `--prefer`** when a wallpaper has multiple source colours
    (`saturation` / `lightness` / `closest-to-fallback`). Pick one as the

@@ -61,3 +61,6 @@
 [submodule "eww"]
 	path = eww
 	url = git@github.com:SaratAngajalaoffl/dotfiles-eww.git
+[submodule "quickshell"]
+	path = quickshell
+	url = git@github.com:SaratAngajalaoffl/dotfiles-quickshell.git

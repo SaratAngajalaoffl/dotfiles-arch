@@ -40,6 +40,9 @@ pacman-contrib
 
 # --- hyprland desktop ---
 hyprland
+quickshell
+awww
+matugen
 hyprpaper
 hyprlock
 hyprsunset
