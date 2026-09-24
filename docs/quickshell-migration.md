@@ -177,7 +177,7 @@ spike surfaced four findings that change the plan below.
 | --- | --- | --- |
 | 1 | Seamless three-notch bar on both monitors | **PASS** — correct on `DP-3` and `HDMI-A-2` |
 | 2 | Frame around screen (even-odd cut) | **PASS** — `ctx.fill("evenodd")` punches the hole correctly |
-| 3 | Blur on a quickshell layer surface | **PASS** — but see F3/F4, it is not uniform |
+| 3 | Blur on a quickshell layer surface | **PASS** — but see F3/F6, it is not uniform |
 | 4 | awww animated wallpaper | **PASS** — gif animates, per-output |
 
 #### F1 — Do not redeclare `screen` on a `PanelWindow`
@@ -243,21 +243,56 @@ If you want a blurred *small* popup later, it has to be a `PanelWindow` with a
 positioned mask — more code, and it loses `anchor.window` convenience. Decide
 per-popup, don't do it globally.
 
-#### F4 — `ignorealpha` needs `alpha=1` surfaces to be useful
+#### F4 — `qs -c quickshell` does NOT work; the invocation is plain `qs`
+
+Quickshell detects configs as **subdirectories** of an XDG config dir:
+`<xdg>/quickshell/<name>/shell.qml`. But if `<xdg>/quickshell/shell.qml`
+exists, that is registered as the **`default`** config and *no subdirectories
+are considered*.
+
+Our `.links` maps the app repo's `config` directly onto `~/.config/quickshell`,
+so `shell.qml` sits at `~/.config/quickshell/shell.qml` — the default config.
+Verified:
+
+```
+$ qs -c quickshell
+Could not find "quickshell" config directory in any valid config path.
+$ qs                # works
+$ qs -p ~/.config/quickshell   # also works
+```
+
+**Consequence:** `hl.exec_cmd("qs")` in `autostart.lua`, and any future IPC or
+reload command, must not use `-c quickshell`. The layer namespace is
+unaffected — it is still `quickshell` (confirmed with the running shell).
+
+#### F5 — Lua mode changes `hyprctl dispatch` too, not just `keyword`
+
+`hyprctl dispatch <arg>` wraps the argument as `hl.dispatch(<arg>)`. So a raw
+shell command string is parsed as Lua and fails:
+
+```
+$ hyprctl dispatch exec "touch /tmp/x"
+error: ...'exec'...: attempt to perform arithmetic on a nil value
+```
+
+The working forms:
+
+```bash
+hyprctl eval 'hl.dispatch(hl.dsp.exec_cmd("touch /tmp/x"))'   # explicit, works
+```
+
+This only affects interactive/scripted dispatch. `autostart.lua` already calls
+`hl.exec_cmd(...)`, which is correct and unaffected — verified by launching the
+shell through `hl.dispatch(hl.dsp.exec_cmd("qs"))`.
+
+#### F6 — `ignorealpha` needs `alpha=1` surfaces to be useful
 
 `hyprctl layers` reports `alpha: 1` for quickshell layer surfaces even when the
 QML content is translucent, because the surface's alpha is per-pixel. So
 `ignorealpha` does not gate blur the way you would expect from the wiki. Use
 `ignore_alpha = 0.0` and rely on the QML fill's own alpha for the look.
 
-#### F5 — `qs -p <path>` names the layer `quickshell`; real config name TBD
-
-Quickshell has no `namespace` property on windows — it uses the Wayland appId.
-With `qs -p /tmp/qs-spike` the layer namespace was `quickshell`. **Confirm the
-namespace for the real `qs -c quickshell` layout in Chunk 1 before writing
-layerrules**, since every rule keys off it.
-
-#### F6 — awww is a drop-in for hyprpaper, and per-output
+#### F7 — awww is a drop-in for hyprpaper, and per-output
 
 `awww-daemon` + `awww img <file> --outputs <name> --transition-type grow`
 animated a 20-frame gif on `HDMI-A-2` while `DP-3` was untouched. `awww query`
@@ -285,40 +320,148 @@ alongside it. Reversible in one commit.
    creates the file; until then fall back to the Catppuccin Mocha literals).
 4. Add to `hypr`:
    - `packages`: `quickshell`, `matugen`, `awww` under `pacman:`
-   - `conf/hyprland/autostart.lua`: `hl.exec_cmd("qs -c quickshell")`, and
-     **keep** `waybar`/`eww` for now
+   - `conf/hyprland/autostart.lua`: `hl.exec_cmd(vars.quickshell)` (plain `qs`
+     — **not** `qs -c quickshell`, see F4), and **keep** `waybar`/`eww` for now
    - `conf/hyprland/windowrules.lua`: `hl.layer_rule` for the quickshell
-     namespace — `blur = true`, `ignore_alpha = 0.0` (see F4). **Confirm the
-     actual namespace first** (`hyprctl layers` with the real config running) —
-     F5. Add `noanim`/`animation slide` only if the bar misbehaves.
-   - `conf/variables.lua`: `M.quickshell = "qs -c quickshell"`
+     namespace — `blur = true`, `ignore_alpha = 0.0`
+   - `conf/variables.lua`: `M.quickshell = "qs"`
 5. Commit the pending `hypr` edits first (see decision 4).
 
-**Exit criteria:** `qs -c quickshell` runs, bar with notches + frame visible,
+**Status: DONE.** See the Chunk 1 result below.
+
+### Chunk 1 result
+
+Shell scaffolded in the new `dotfiles-quickshell` submodule (32 files) and wired
+into Hyprland. Verified:
+
+- `qs` loads with no errors; one bar + one frame per monitor on both `DP-3` and
+  `HDMI-A-2`.
+- Workspace pills render correctly — active workspace as a wide pill, empty ones
+  as dots.
+- Right notch renders all seven triggers (audio, network, bluetooth, clipboard,
+  emoji, notifications, user).
+- Layer namespace is `quickshell`; `hl.layer_rule` applies cleanly.
+- `hyprctl reload` → `hyprctl configerrors` is empty.
+- The autostart path is valid: `hl.dispatch(hl.dsp.exec_cmd("qs"))` starts the
+  shell.
+
+The only runtime warning is the expected missing
+`~/.config/theme/current/quickshell-colors.json` — Chunk 2 creates it. Until
+then the palette falls back to Catppuccin Mocha literals.
+
+**Deliberate scope limit:** the popup triggers toggle `ShellState` flags that
+nothing renders yet. Popups land in Chunk 4, and the state/wiring is testable
+before the UI exists. Keybinds still point at `rofi` because rofi still runs.
+
+**Exit criteria:** `qs` runs, bar with notches + frame visible,
 no errors in `qs log`, both monitors correct, waybar still up.
 
 ---
 
-## Chunk 2 — Theme bridge
+## Chunk 2 — Theming: matugen generation + curated overrides
 
-**Goal:** the shell follows `theme-set.sh` like every other app does.
+**Goal:** matugen generates themes from the wallpaper; you can also use the
+hand-built themes; any theme can be overridden and committed.
 
-1. Add `quickshell-colors.json` to every theme dir in `dotfiles-theme`,
-   generated from that theme's `waybar-colors.css` (script it, one commit).
-   Shape:
-   ```json
-   { "rosewater":"#f5e0dc", ..., "text":"#cdd6f4", "subtext1":"#bac2de",
-     "surface0":"#313244", "base":"#1e1e2e", "mantle":"#181825", "crust":"#11111b" }
-   ```
-2. `Colors.qml` watches `~/.config/theme/current/quickshell-colors.json` via
-   `FileView { watchChanges: true }` and re-parses on change — same pattern as
-   Brain_Shell's `ColorLoader.qml`, minus matugen.
-3. `theme-set.sh`: add the one line that symlinks/points at the new file, and
-   replace `reload_all_services.sh` with `qs ipc call theme reload`.
-4. Dashboard Customise tab gets a **Themes** section that calls
-   `theme-menu.sh`'s logic via IPC, replacing the rofi picker.
+**Decision (yours):** matugen is the generator, `dotfiles-theme` is the
+store of truth. Generated themes are ephemeral until explicitly saved.
 
-**Exit criteria:** `theme-set.sh gruvbox` recolours the shell live, no restart.
+### Evidence: a theme IS a 26-value palette plus wallpapers
+
+Measured across all 23 themes in `dotfiles-theme`:
+
+| File | Keys | Cross-theme content differences |
+| --- | --- | --- |
+| `waybar-colors.css` | 26 | — (canonical source) |
+| `eww-colors.scss` | 26 | **0** |
+| `nvim-colors.lua` | 26 | **0** |
+| `rofi-colors.rasi` | 26 (+175 identical lines) | **0** content, 44 comment/header |
+| `kitty-theme.conf` | 39 | **0** content, 88 comment/header |
+| `hyprland-colors.lua` | 2 | 88 — the border accent, see below |
+| `dunstrc` | 6 | 352 — palette + per-theme extras, see below |
+
+So **5 of 7 files are pure functions of the palette.** The other two are palette
+plus one small declared input each.
+
+**Border accent is a per-theme choice of palette key**, not a free value.
+Measured: Catppuccin flavours use `red`, most omarchy ports use `blue`, and
+`kanagawa`/`lumon`/`retro-82` use `text`/`mauve`/`peach`. Only 3 themes
+(`hackerman`, `last-horizon`, `white`) hand-pick a value outside the palette.
+Represent it as `BORDER_ACCENT=<palette-key>` in `theme.conf`.
+
+**`dunstrc` is palette-derived for 20 of 23 themes.** Only 3 have any
+non-palette value, and `catppuccin-mocha` — the default — is the worst, with 9
+stray values including a magenta `#cd0373` that appears in no palette.
+**That file is stale: your default theme's dunst has never matched its own
+colours.** A rebuild fixes it.
+
+### Target structure
+
+```
+dotfiles-theme/config/
+  themes/<name>/
+    palette.json          <- SOURCE OF TRUTH: 26 keys
+    theme.conf            <- THEME_NAME, THEME_MODE, QT_SCHEME, BORDER_ACCENT
+    backgrounds/
+    overrides/            <- optional, per theme
+      palette.json        <-   partial patch, merged over the palette
+      dunstrc             <-   or a whole file, applied verbatim
+  templates/              <- shared by all themes, one per output file
+    waybar-colors.css.tpl  rofi-colors.rasi.tpl   kitty-theme.conf.tpl
+    hyprland-colors.lua.tpl  nvim-colors.lua.tpl  dunstrc.tpl  quickshell-colors.json.tpl
+  matugen.toml            <- template wiring for matugen
+```
+
+### Resolution order
+
+1. **palette** — from `palette.json` (curated) or matugen-from-wallpaper (generated)
+2. **patch** — merge `overrides/palette.json` on top
+3. **render** — `templates/*.tpl` → per-app files
+4. **verbatim** — `overrides/<filename>` wins outright if present (escape hatch)
+
+Step 4 is what makes hand-tuned files like `dunstrc` a non-issue: drop the
+whole file in `overrides/` and it is used as-is.
+
+### Generated vs curated
+
+- `matugen image <wallpaper>` writes to
+  `~/.local/state/theme/generated/<slug>/` — ephemeral, **never in the repo**.
+- **Save/promote** copies that into `dotfiles-theme/config/themes/<slug>/`,
+  where it becomes a normal curated theme: hand-editable, committable, and
+  visible to `theme-menu.sh` alongside the other 23.
+- `theme-set.sh` accepts either, so nothing changes about how you switch.
+
+### Steps
+
+1. Build `theme-gen.py` (lives in `dotfiles-theme/bin/`) implementing the
+   resolution order above. Add `quickshell-colors.json` as an 8th template so
+   the shell gets its palette the same way every other app does.
+2. **Verify byte-for-byte** against the current 23 themes before committing.
+   Prototype at `/tmp/theme-gen/gen.py` already reproduces 73/161 file-theme
+   pairs exactly, with all remaining diffs accounted for (headers + the two
+   declared inputs above). Expect ~100% after adding `BORDER_ACCENT`,
+   header templating, and `dunstrc` overrides.
+3. Collapse each theme dir: keep `palette.json` + `theme.conf` + `backgrounds/`,
+   delete the 7 rendered files, add `overrides/` only where needed
+   (3 themes for dunst, 3 for the border accent).
+4. `matugen.toml` + a `theme-generate.sh` entry point.
+5. `Colors.qml` watches `~/.config/theme/current/quickshell-colors.json` via
+   `FileView { watchChanges: true }` — Brain_Shell's `ColorLoader.qml` pattern.
+6. `theme-set.sh`: point at the new file, replace `reload_all_services.sh`
+   with `qs ipc call theme reload`.
+7. Dashboard Customise tab gets a **Themes** section: pick from the 23 curated
+   themes, generate from the current wallpaper, or save the generated one.
+
+**Exit criteria:**
+- `theme-gen.py` reproduces the committed tree byte-for-byte (verified, not assumed)
+- `theme-set.sh gruvbox` recolours the shell live, no restart
+- generate-from-wallpaper produces a theme; save promotes it into the repo
+- an `overrides/` edit wins over the generated value
+
+**Risk / rollback:** steps 1–2 are additive and touch nothing. Step 3 is the
+destructive one (deletes 7 files × 23 themes) and must only run **after** the
+byte-for-byte check passes, in its own commit, so `git revert` restores the
+rendered files.
 
 ---
 
@@ -436,6 +579,13 @@ also gitignored, is where these runtime knobs go — `kitty.conf` gets one
 `spotify-search` keyring secrets (`.secrets` entry moves from `eww` to
 `quickshell`).
 
+**5f. Emoji picker** — replaces `rofi-emoji`, lives in the top-right dropdown
+(next to the notification bell). Needs a bundled emoji dataset: ship
+`emoji.json` in the repo (name → glyph, ~1800 entries) and filter it in QML,
+rather than shelling out. Selecting an emoji copies it via `wl-copy` and,
+optionally, types it with `wtype` — **`wtype` is not installed** (checked in
+Chunk 0), so either add it to `packages` or make paste-only the default.
+
 ---
 
 ## Chunk 6 — Cutover
@@ -471,9 +621,20 @@ Chunk 6, or now if you want it out of the way.
 
 ## Open questions
 
-1. Palette: keep `dotfiles-theme`, or go matugen? (recommend: keep theme)
-2. Animated wallpaper: awww *transitions* enough, or do you want video
-   (`mpvpaper`)?
-3. `rofi`: drop entirely, or keep `rofi-emoji`?
+1. ~~Palette: keep `dotfiles-theme`, or go matugen?~~ **Answered:** matugen
+   generates; `dotfiles-theme` stores. See Chunk 2.
+2. ~~Animated wallpaper: video (`mpvpaper`)?~~ **Answered: no video.** Pictures
+   only, switched with an awww transition. `awww` alone, no `mpvpaper`.
+3. ~~`rofi`: drop entirely, or keep `rofi-emoji`?~~ **Answered: drop `rofi`
+   entirely.** The emoji picker moves into the top-right dropdown as a
+   Quickshell popup. So `rofi`, `rofi-emoji`, `dotfiles-rofi`, `config.rasi`,
+   `fonts.rasi`, `colors.rasi` and `toggle_rofi.sh` all go in Chunk 6.
 4. Calendar: display-only, or real CalDAV/Google events?
-5. Are the pending `hypr` submodule edits meant to be committed?
+5. ~~Are the pending `hypr` submodule edits meant to be committed?~~ **Done.**
+6. **matugen needs `--prefer`** when a wallpaper has multiple source colours
+   (`saturation` / `lightness` / `closest-to-fallback`). Pick one as the
+   default, or the Customise tab should expose it.
+7. **Should `dotfiles-theme` still ship the 7 rendered files for apps that are
+   not yet Quickshell?** After Chunk 6 nothing consumes `rofi-colors.rasi` or
+   `eww-colors.scss`, but `kitty`/`nvim`/`hypr` still do. Keeping the generator
+   means those are still produced — just from templates instead of committed.
