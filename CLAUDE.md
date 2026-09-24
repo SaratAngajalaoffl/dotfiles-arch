@@ -45,7 +45,7 @@ Current submodules and their targets:
 | `lazygit`  | `~/.config/lazygit/config.yml`    |
 | `bin`      | `~/.local/bin/*` (per-file links) |
 | `theme`    | `~/.config/theme` + `~/.local/bin/*` (theme switcher, see Theming below) |
-| `quickshell` | `~/.config/quickshell` (the desktop shell: bar, frame, notifications, launcher, emoji, wallpaper, dashboard) |
+| `quickshell` | `~/.config/quickshell` (the desktop shell: bar, frame, control center, notifications, launcher) |
 
 (Not exhaustive — run `git submodule status` for the full list; most app submodules follow the `config:~/.config/<app>` pattern from the "Adding a new app" steps.)
 
@@ -84,8 +84,8 @@ The consuming submodules gitignore their theme-owned file (`kitty`: `config/curr
 # Switch theme (sets the wallpaper, reloads the shell and Hyprland)
 theme-set.sh <theme-name>
 
-# Pick a theme from the shell, bound to SUPER + CTRL + SPACE
-# (the Quickshell theme popup — it drives the same theme-set.sh)
+# Same switch through the running shell (it drives theme-set.sh)
+qs ipc call themes set <theme-name>
 
 # Verify generated files match the committed tree
 python3 theme/bin/theme-gen.py --check
