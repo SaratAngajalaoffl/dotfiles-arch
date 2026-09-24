@@ -44,6 +44,7 @@ quickshell
 awww
 matugen
 python-pillow
+sound-theme-freedesktop
 hyprlock
 hyprsunset
 hyprpicker
@@ -60,6 +61,7 @@ openrgb
 
 # --- audio / bluetooth ---
 wireplumber
+pipewire-pulse
 libpulse
 playerctl
 bluez
