@@ -54,3 +54,4 @@ See `CLAUDE.md` for the full steps: create a `dotfiles-<appname>` repo, add a `.
 - [0003](docs/adr/0003-ai-agent-popup-architecture.md) — AI agent popup architecture
 - [0004](docs/adr/0004-ai-commit-assistant-backend-selection.md) — AI commit assistant backend selection
 - [0005](docs/adr/0005-pi-agent-custom-provider-only.md) — pi-agent custom-provider-only
+- [0006](docs/adr/0006-parallel-multi-repo-ai-commit.md) — parallel AI commit across submodules and the parent (`aicp`)

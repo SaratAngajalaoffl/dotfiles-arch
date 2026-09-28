@@ -81,8 +81,6 @@ libsecret
 gnome-keyring
 
 # --- gui apps referenced by hypr keybinds / desktop entries ---
-thunar
-thunar-volman
 imv
 flatpak
 
@@ -100,7 +98,6 @@ aws-cli
 aur:
 google-chrome
 brave-bin
-cursor-bin
 cliamp-bin
 
 rustup:
