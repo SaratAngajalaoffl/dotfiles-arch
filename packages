@@ -90,11 +90,6 @@ docker-compose
 kubectl
 helm
 
-# --- homelab backup scripts (scripts/backup) ---
-tar
-gnupg
-aws-cli
-
 aur:
 google-chrome
 brave-bin
