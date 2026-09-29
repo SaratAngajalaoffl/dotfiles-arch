@@ -2,6 +2,36 @@
 
 Personal Arch Linux dotfiles, split into one git repo per application and wired together here as submodules. This is the parent repo — it owns bootstrapping (`install.sh`), the system package list (`packages`), and the submodule declarations. It never hard-codes an app's config paths; that lives in each submodule's own `.links` manifest.
 
+## Screenshots
+
+### Workspace 1
+
+![Workspace 1 — btop, fastfetch and Neovim under the Quickshell bar](docs/screenshots/desktop-workspace-1.jpg)
+
+### Quickshell widgets
+
+The island (centre pill) morphs into whichever widget you open:
+
+| Home | Launcher | Themes |
+| --- | --- | --- |
+| ![home](docs/screenshots/widgets/island-home.jpg) | ![launcher](docs/screenshots/widgets/island-launcher.jpg) | ![themes](docs/screenshots/widgets/island-theme.jpg) |
+| **Agents + Bifrost usage** | **Clipboard** | **Emoji** |
+| ![agents](docs/screenshots/widgets/island-agents.jpg) | ![clipboard](docs/screenshots/widgets/island-clipboard.jpg) | ![emoji](docs/screenshots/widgets/island-emoji.jpg) |
+| **Pomodoro** | **Alarms** | **Stats** |
+| ![pomodoro](docs/screenshots/widgets/island-pomodoro.jpg) | ![alarm](docs/screenshots/widgets/island-alarm.jpg) | ![stats](docs/screenshots/widgets/island-stats.jpg) |
+| **Settings** | **Power** | |
+| ![settings](docs/screenshots/widgets/island-settings.jpg) | ![power](docs/screenshots/widgets/island-power.jpg) | |
+
+Control center (hover the top-right corner) and its pages:
+
+| Main | Audio | Bluetooth |
+| --- | --- | --- |
+| ![main](docs/screenshots/widgets/control-center-main.jpg) | ![audio](docs/screenshots/widgets/control-center-audio.jpg) | ![bluetooth](docs/screenshots/widgets/control-center-bluetooth.jpg) |
+| **Network** | **Lights** | **VPN** |
+| ![network](docs/screenshots/widgets/control-center-network.jpg) | ![lights](docs/screenshots/widgets/control-center-lights.jpg) | ![vpn](docs/screenshots/widgets/control-center-vpn.jpg) |
+| **Spotify** | | |
+| ![spotify](docs/screenshots/widgets/control-center-spotify.jpg) | | |
+
 ## Layout
 
 | Path         | Purpose                                                              |
