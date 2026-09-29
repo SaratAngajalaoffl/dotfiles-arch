@@ -55,6 +55,7 @@ slurp
 cliphist
 wl-clipboard
 brightnessctl
+wtype
 libnotify
 network-manager-applet
 openrgb
@@ -94,6 +95,7 @@ aur:
 google-chrome
 brave-bin
 cliamp-bin
+voxtype
 
 rustup:
 stable

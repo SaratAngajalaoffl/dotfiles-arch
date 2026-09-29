@@ -43,3 +43,6 @@
 [submodule "quickshell"]
 	path = quickshell
 	url = git@github.com:SaratAngajalaoffl/dotfiles-quickshell.git
+[submodule "voxtype"]
+	path = voxtype
+	url = git@github.com:SaratAngajalaoffl/dotfiles-voxtype.git
