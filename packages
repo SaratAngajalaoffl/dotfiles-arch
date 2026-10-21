@@ -96,6 +96,7 @@ google-chrome
 brave-bin
 cliamp-bin
 voxtype
+nvibrant-bin
 
 rustup:
 stable
