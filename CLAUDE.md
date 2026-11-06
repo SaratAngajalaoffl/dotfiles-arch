@@ -139,6 +139,12 @@ Built from scratch with lazy.nvim — no starter distribution.
 
 Plugin updates: `:Lazy update` inside Neovim. Lock file is `lazy-lock.json`.
 
+### AI agent sessions
+
+`nvim/config/lua/config/ai-agents.lua` is a popup (`<C-S-L>`) with one tab per agent session (claude or pi). `<C-S-N>` creates a session: `bin/agent-worktree new <task>` makes `~/.worktrees/<repo-slug>/<task>` on branch `agent/<task>` (from the submodule's own repo when the current file is in a submodule), and the agent runs there in a detached tmux session tagged `@agent_*`, so sessions survive nvim restarts and are restored on the next `<C-S-L>`. `<C-S-X>` stops, reviews (lazygit), merges (rebase + ff into the base branch, then removes the worktree) or discards a session.
+
+`bin/agent-guard` enforces it: Claude Code's `PreToolUse` hook (`~/.claude/settings.json`) and pi's `~/.pi/agent/extensions/worktree-guard.ts` both deny edits to a repo's main checkout and history-changing git commands run there. Agent state dirs (`~/.claude`, `~/.pi`) are exempt; `AGENT_ALLOW_MAIN=1` disables the guard for a session. **This applies to agents working on this repo too** — use a worktree (e.g. Claude's EnterWorktree) to edit it.
+
 ## ADRs
 
 - **ADR 0001** (`docs/adr/0001-...`): Why multi-repo with submodules over a flat repo, Stow, or per-OS files.
