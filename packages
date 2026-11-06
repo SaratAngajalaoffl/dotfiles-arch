@@ -8,6 +8,9 @@
 # (yay/paru) for the aur: section.
 
 pacman:
+# --- voxtype Parakeet on NVIDIA (ONNX CUDA 13 runtime) ---
+cuda
+cudnn
 # --- base toolchain ---
 git
 base-devel
@@ -95,7 +98,7 @@ aur:
 google-chrome
 brave-bin
 cliamp-bin
-voxtype
+voxtype-bin
 nvibrant-bin
 
 rustup:
